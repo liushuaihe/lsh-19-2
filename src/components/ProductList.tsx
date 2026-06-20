@@ -2,6 +2,7 @@ import { useStore } from "@/store/useStore";
 import { Plus, Search, X, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { calculateProductCost } from "@/utils/costEngine";
+import { normalizeMarginRate } from "@/lib/utils";
 
 export default function ProductList() {
   const products = useStore((s) => s.products);
@@ -56,10 +57,13 @@ export default function ProductList() {
             conversions
           );
           const cost = costTree.cost;
-          const salePrice = product.salePrice;
+          const salePrice = typeof product.salePrice === "number" ? product.salePrice : 0;
           const grossProfit = salePrice - cost;
           const marginRate = salePrice > 0 ? grossProfit / salePrice : 0;
-          const targetMarginRate = product.targetMarginRate;
+          const targetMarginRate =
+            typeof product.targetMarginRate === "number"
+              ? product.targetMarginRate
+              : 0.5;
           const belowTarget = salePrice > 0 && marginRate < targetMarginRate;
           const isSelected = selectedProductId === product.id;
           const isEditing = editingId === product.id;
@@ -133,22 +137,28 @@ export default function ProductList() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-charcoal-400 w-14">目标毛利</span>
                   {isEditing ? (
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="1"
-                      value={targetMarginRate || ""}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        updateProduct(product.id, {
-                          targetMarginRate: parseFloat(e.target.value) || 0,
-                        });
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="0.5"
-                      className="flex-1 px-2 py-0.5 bg-charcoal-700 border border-gold-600/50 rounded text-xs text-charcoal-50 focus:outline-none focus:border-gold-500 w-16"
-                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="100"
+                        value={
+                          targetMarginRate ? (targetMarginRate * 100).toFixed(0) : ""
+                        }
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const raw = parseFloat(e.target.value);
+                          updateProduct(product.id, {
+                            targetMarginRate: normalizeMarginRate(raw),
+                          });
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="50"
+                        className="flex-1 px-2 py-0.5 bg-charcoal-700 border border-gold-600/50 rounded text-xs text-charcoal-50 focus:outline-none focus:border-gold-500 w-14"
+                      />
+                      <span className="text-xs text-charcoal-400">%</span>
+                    </div>
                   ) : (
                     <span
                       className="flex-1 text-xs text-charcoal-300 cursor-pointer"

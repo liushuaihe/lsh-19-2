@@ -2,6 +2,7 @@ import { useStore } from "@/store/useStore";
 import { calculateProductCost, calculateCost } from "@/utils/costEngine";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { TrendingUp, Layers, AlertTriangle, DollarSign, Target, TrendingUp as ProfitIcon } from "lucide-react";
+import { normalizeMarginRate } from "@/lib/utils";
 
 const COLORS = [
   "#D4A017",
@@ -40,8 +41,12 @@ export default function CostPanel() {
   );
 
   const cost = costTree.cost;
-  const salePrice = product?.salePrice ?? 0;
-  const targetMarginRate = product?.targetMarginRate ?? 0;
+  const salePrice =
+    typeof product?.salePrice === "number" ? product.salePrice : 0;
+  const targetMarginRate =
+    typeof product?.targetMarginRate === "number"
+      ? product.targetMarginRate
+      : 0.5;
   const grossProfit = salePrice - cost;
   const marginRate = salePrice > 0 ? grossProfit / salePrice : 0;
   const belowTarget = salePrice > 0 && marginRate < targetMarginRate;
@@ -104,20 +109,27 @@ export default function CostPanel() {
                 <Target className="w-3 h-3 text-charcoal-400" />
                 <span className="text-xs text-charcoal-400">目标毛利率</span>
               </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={targetMarginRate || ""}
-                onChange={(e) =>
-                  updateProduct(selectedProductId, {
-                    targetMarginRate: parseFloat(e.target.value) || 0,
-                  })
-                }
-                placeholder="0.5"
-                className="w-16 px-2 py-1 bg-charcoal-700 border border-charcoal-600 rounded text-xs text-charcoal-50 text-right focus:outline-none focus:border-gold-500"
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="100"
+                  value={
+                    targetMarginRate ? (targetMarginRate * 100).toFixed(0) : ""
+                  }
+                  onChange={(e) =>
+                    updateProduct(selectedProductId, {
+                      targetMarginRate: normalizeMarginRate(
+                        parseFloat(e.target.value)
+                      ),
+                    })
+                  }
+                  placeholder="50"
+                  className="w-14 px-2 py-1 bg-charcoal-700 border border-charcoal-600 rounded text-xs text-charcoal-50 text-right focus:outline-none focus:border-gold-500"
+                />
+                <span className="text-xs text-charcoal-400 w-3">%</span>
+              </div>
             </div>
             {salePrice > 0 && (
               <>

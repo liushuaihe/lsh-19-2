@@ -378,9 +378,22 @@ export const useStore = create<AppState>()(
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState> & { expandedNodeIds?: string[] };
+        const migratedProducts = (p.products ?? []).map((prod) => ({
+          ...prod,
+          salePrice:
+            typeof prod.salePrice === "number" && !isNaN(prod.salePrice)
+              ? prod.salePrice
+              : 0,
+          targetMarginRate:
+            typeof prod.targetMarginRate === "number" &&
+            !isNaN(prod.targetMarginRate)
+              ? prod.targetMarginRate
+              : 0.5,
+        }));
         return {
           ...current,
           ...p,
+          products: migratedProducts,
           expandedNodeIds: new Set(p.expandedNodeIds ?? []),
         };
       },
